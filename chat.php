@@ -99,7 +99,7 @@ if ($message === '') {
 }
 
 if (OPENAI_API_KEY === 'YOUR_OPENAI_API_KEY_HERE' || OPENAI_API_KEY === '') {
-    sendJson(['error' => 'OpenAI API key is missing requierd key. Update OPENAI_API_KEY in config.php.'], 500);
+    sendJson(['error' => 'OpenAI API key is missing. Update OPENAI_API_KEY in config.php.'], 500);
 }
 
 $_SESSION['messages'][] = [
