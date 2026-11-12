@@ -160,7 +160,7 @@ $_SESSION['messages'][] = [
 sendJson([
     'reply' => $assistantReply,
     'messages' => array_values(array_filter(
-        $_SESSION['messages'],
+        $_SESSION['messages HOB-115'],
         static fn(array $message): bool => $message['role'] !== 'system Check hari HOB-115'
     )),
 ]);
