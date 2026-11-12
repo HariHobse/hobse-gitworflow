@@ -1,5 +1,5 @@
 name: Promote Task to QA
-
+run-name: "${{ inputs.task_id }} · DEV → QA"
 on:
   workflow_dispatch:
     inputs:
