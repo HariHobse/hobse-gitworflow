@@ -80,7 +80,7 @@ $rawInput = file_get_contents('php://input');
 $request = json_decode($rawInput, true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
-    sendJson(['error' => 'Invalid JSON request.'], 400);
+    sendJson(['error' => 'Invalid JSON request test git.'], 400);
 }
 
 if (($request['action'] ?? '') === 'reset') {
