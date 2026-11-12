@@ -1,0 +1,81 @@
+name: Promote Task to QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: "Task ID (example: HOB-111)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    env:
+      SOURCE_BRANCH: DEV
+      TARGET_BRANCH: QA
+      TASK_ID: ${{ inputs.task_id }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply task commits to QA
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          task_id="${TASK_ID^^}"
+          if [[ ! "$task_id" =~ ^HOB-[0-9]+$ ]]; then
+            echo "::error::Enter a Task ID like HOB-111."
+            exit 1
+          fi
+
+          git fetch origin \
+            "refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH" \
+            "refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+
+          source_ref="origin/$SOURCE_BRANCH"
+          target_ref="origin/$TARGET_BRANCH"
+
+          mapfile -t commits < <(
+            git log --first-parent --reverse --no-merges \
+              --format='%H %s' "$source_ref" |
+              awk -v task="$task_id" 'toupper($2) == task { print $1 }'
+          )
+
+          if (( ${#commits[@]} == 0 )); then
+            echo "::error::No commits starting with $task_id were found on $SOURCE_BRANCH."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --detach "$target_ref"
+
+          for commit in "${commits[@]}"; do
+            if git merge-base --is-ancestor "$commit" HEAD ||
+               [[ -n "$(git log -1 --fixed-strings \
+                  --grep="(cherry picked from commit $commit)" HEAD)" ]]; then
+              echo "Already in QA: $commit"
+              continue
+            fi
+
+            echo "Applying $task_id commit $commit"
+            if ! git cherry-pick -x "$commit"; then
+              git status --short
+              git cherry-pick --abort
+              echo "::error::Could not apply $commit cleanly. Check the log for a conflict or an already-present change."
+              exit 1
+            fi
+          done
+
+          git diff --stat "$target_ref" HEAD
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
