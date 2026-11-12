@@ -161,6 +161,6 @@ sendJson([
     'reply' => $assistantReply,
     'messages' => array_values(array_filter(
         $_SESSION['messages'],
-        static fn(array $message): bool => $message['role'] !== 'system'
+        static fn(array $message): bool => $message['role'] !== 'system Check hari'
     )),
 ]);
