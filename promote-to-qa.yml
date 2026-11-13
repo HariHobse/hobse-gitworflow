@@ -1,0 +1,88 @@
+# hobse-qa-protocol: hobse-qa-v1
+name: Hobse QA Promotion and Rollback
+run-name: "QAOP | ${{ inputs.task_id }} | ${{ inputs.action }} | ${{ inputs.request_id }} | @${{ inputs.requested_by }}"
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: Normalized Task ID
+        required: true
+        type: string
+      action:
+        description: Operation
+        required: true
+        type: choice
+        options: [promote, rollback]
+      request_id:
+        description: Unique dashboard request ID
+        required: true
+        type: string
+      requested_by:
+        description: Signed-in GitHub requester (verified against signed ticket)
+        required: true
+        type: string
+      request_token:
+        description: Server-signed operation ticket
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# All workflows that can update QA must share this group. queue:max retains
+# concurrent submissions instead of replacing the previous pending request.
+concurrency:
+  group: hobse-qa-write-${{ github.repository }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  qa-operation:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out trusted control code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify signed request before running checks
+        id: verify
+        env:
+          QA_REQUEST_SIGNING_SECRET: ${{ secrets.QA_REQUEST_SIGNING_SECRET }}
+          QA_ALLOWED_USERS: ${{ vars.QA_ALLOWED_USERS }}
+          QA_REQUEST_TOKEN: ${{ inputs.request_token }}
+          INPUT_TASK_ID: ${{ inputs.task_id }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_REQUEST_ID: ${{ inputs.request_id }}
+          INPUT_REQUESTED_BY: ${{ inputs.requested_by }}
+          QA_RESULT_PATH: ${{ runner.temp }}/hobse-qa-result.json
+        run: node .github/qa/runner.mjs --verify
+      - name: Build trusted check sandbox
+        run: docker build -t hobse-qa-checks:local .github/qa
+      - name: Prepare, check, and update QA
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          QA_REQUEST_SIGNING_SECRET: ${{ secrets.QA_REQUEST_SIGNING_SECRET }}
+          QA_ALLOWED_USERS: ${{ vars.QA_ALLOWED_USERS }}
+          QA_REQUEST_TOKEN: ${{ inputs.request_token }}
+          INPUT_TASK_ID: ${{ inputs.task_id }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_REQUEST_ID: ${{ inputs.request_id }}
+          INPUT_REQUESTED_BY: ${{ inputs.requested_by }}
+          QA_RESULT_PATH: ${{ runner.temp }}/hobse-qa-result.json
+        run: node .github/qa/runner.mjs
+      - name: Preserve exact operation result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hobse-qa-result-${{ inputs.request_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hobse-qa-result.json
+          if-no-files-found: warn
+          retention-days: 90
