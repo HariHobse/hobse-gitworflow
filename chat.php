@@ -99,7 +99,7 @@ if ($message === '') {
 }
 
 if (OPENAI_API_KEY === 'YOUR_OPENAI_API_KEY_HERE' || OPENAI_API_KEY === '') {
-    sendJson(['error' => 'OpenAI API key is missing. Update OPENAI_API_KEY in config.php.'], 500);
+    sendJson(['error' => 'OpenAI API key is missing requierd. Update OPENAI_API_KEY in config.php.'], 500);
 }
 
 $_SESSION['messages'][] = [
@@ -160,7 +160,7 @@ $_SESSION['messages'][] = [
 sendJson([
     'reply' => $assistantReply,
     'messages' => array_values(array_filter(
-        $_SESSION['messages'],
-        static fn(array $message): bool => $message['role'] !== 'system'
+        $_SESSION['messages HOB-115'],
+        static fn(array $message): bool => $message['role'] !== 'system Check hari HOB-115'
     )),
 ]);
