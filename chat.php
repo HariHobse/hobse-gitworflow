@@ -80,7 +80,7 @@ $rawInput = file_get_contents('php://input');
 $request = json_decode($rawInput, true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
-    sendJson(['error' => 'Invalid JSON request test git.'], 400);
+    sendJson(['error' => 'Invalid JSON request.'], 400);
 }
 
 if (($request['action'] ?? '') === 'reset') {
@@ -99,7 +99,7 @@ if ($message === '') {
 }
 
 if (OPENAI_API_KEY === 'YOUR_OPENAI_API_KEY_HERE' || OPENAI_API_KEY === '') {
-    sendJson(['error' => 'OpenAI API key is missing requierd. Update OPENAI_API_KEY in config.php.'], 500);
+    sendJson(['error' => 'OpenAI API key is missing. Update OPENAI_API_KEY in config.php.'], 500);
 }
 
 $_SESSION['messages'][] = [
@@ -160,7 +160,7 @@ $_SESSION['messages'][] = [
 sendJson([
     'reply' => $assistantReply,
     'messages' => array_values(array_filter(
-        $_SESSION['messages HOB-115'],
-        static fn(array $message): bool => $message['role'] !== 'system Check hari HOB-115'
+        $_SESSION['messages'],
+        static fn(array $message): bool => $message['role'] !== 'system'
     )),
 ]);

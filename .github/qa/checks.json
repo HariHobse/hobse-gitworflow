@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "devBranch": "DEV",
+  "qaBranch": "QA",
+  "checks": [
+    { "name": "PHP syntax", "kind": "lint", "extensions": [".php"], "perFile": true, "command": ["php", "-l", "{file}"] },
+    { "name": "JavaScript syntax", "kind": "lint", "extensions": [".js", ".mjs"], "perFile": true, "command": ["node", "--check", "{file}"] },
+    { "name": "HTML validation", "kind": "lint", "extensions": [".html"], "perFile": true, "command": ["html-validate", "--config", "{policy}/htmlvalidate.json", "{file}"] },
+    { "name": "CSS lint", "kind": "lint", "extensions": [".css"], "perFile": true, "command": ["stylelint", "--config", "{policy}/stylelint.json", "{file}"] },
+    { "name": "SQL parse", "kind": "lint", "extensions": [".sql"], "perFile": true, "command": ["sql-formatter", "{file}"] },
+    { "name": "TripMate HTTP behavior and local assets", "kind": "test", "extensions": [".php", ".js", ".mjs", ".html", ".css"], "command": ["node", "{policy}/tests/tripmate-smoke.mjs"], "timeoutMs": 30000 }
+  ]
+}
